@@ -8,20 +8,29 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Assuming you have defined these in your environment configuration
   const API_URL = 'https://pizza-shop-app.onrender.com/users/login';
 
   const login = async () => {
-    // Check if email and password are not empty
     if (!email || !password) {
       alert('Please fill in both Email and Password.');
       return;
+    }
+    else{
+      alert("You are successfully logged in")
     }
 
     try {
       const response = await axios.post(API_URL, { email, password });
       await AsyncStorage.setItem('userToken', response.data.token);
-      navigation.navigate('Payment');
+
+      const role = response.data.role; // Adjust as per your API response structure
+
+      if (role === 'admin') {
+        navigation.navigate('AuthStack',{ screen: 'Admin'});
+      } else {
+        navigation.navigate('AuthStack', { screen: 'Checkout'}) ;
+      }
+
     } catch (error) {
       if (error.response) {
         console.error('Server Error:', error.response.data);
@@ -36,8 +45,6 @@ const LoginScreen = ({ navigation }) => {
       }
     }
   };
-
-
 
   return (
     <View style={styles.container}>
@@ -71,12 +78,12 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.linkText}>Forgot password?</Text>
           </TouchableOpacity>
           <View>
-          <Text style={styles.linkText}>
+            <Text style={styles.linkText}>
               Don't have an account?{' '}
-              <TouchableOpacity onPress={() => navigation.navigate('AuthStack', {screen: 'SignUpScreen',})}><Text style={styles.signupText}>Sign Up</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('AuthStack', { screen: 'SignUp' })}>
+                <Text style={styles.signupText}>Sign Up</Text>
               </TouchableOpacity>
             </Text>
-          
           </View>
         </View>
       </View>
@@ -96,7 +103,7 @@ const styles = StyleSheet.create({
     left: 20,
   },
   innerContainer: {
-    top:10,
+    top: 10,
     flex: 1,
     justifyContent: 'center',
   },

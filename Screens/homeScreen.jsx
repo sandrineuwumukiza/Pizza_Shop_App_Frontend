@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, Animated, ScrollView, StyleSheet, ImageBackground, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import { View, Text, Animated, ScrollView, StyleSheet, ImageBackground, TouchableOpacity, Dimensions, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CategoryCard from '../components/cartegoryCard';
 import ProductCard from '../components/productCard';
@@ -13,6 +13,27 @@ const images = [
   Images.Win,
   Images.Fries,
   Images.Chips,
+];
+
+// Mock product data
+const products = [
+  {
+    productName: 'McDonald - Kartasura',
+    category: 'Fast Food',
+    description: 'Delicious fast food',
+    price: '5.99',
+    image: { url: 'https://example.com/mcdonald.jpg' },
+    onAddToCart: () => console.log('Add to cart'),
+  },
+  {
+    productName: 'Fore Coffee - Paragon',
+    category: 'Beverages',
+    description: 'Fresh coffee',
+    price: '3.99',
+    image: { url: 'https://example.com/fore-coffee.jpg' },
+    onAddToCart: () => console.log('Add to cart'),
+  },
+  // Add more products as needed
 ];
 
 const HomeScreen = ({ navigation }) => {
@@ -36,9 +57,6 @@ const HomeScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerIcons}>
-          <Ionicons name="search-outline" size={24} color="#000" style={styles.icon} />  
-        </View>
         <View>
           <Text style={styles.location}>Current location</Text>
           <Text style={styles.locationDetail}>Kigali, Rwanda</Text>
@@ -47,6 +65,12 @@ const HomeScreen = ({ navigation }) => {
           <Ionicons name="notifications-outline" size={24} color="#000" />
         </View>
       </View>
+      <View style={styles.inputContainer}>
+          <View style={styles.iconContainer}>
+            <Ionicons name="search-outline" size={24} color="#000" style={styles.icon} /> 
+          </View>   
+          <TextInput style={styles.textInput} placeholder='Search'/>
+        </View>
       <Animated.ScrollView 
         ref={scrollViewRef}
         horizontal 
@@ -86,11 +110,10 @@ const HomeScreen = ({ navigation }) => {
           );
         })}
       </View>
-      <View style={{marginLeft: 10,flex:1}}>
-      <Text style={{color: 'white', justifyContent: 'center',alignItems: 'center'}}>CATEGORIES</Text>
+      <View style={{ marginLeft: 10, flex: 1 }}>
+        <Text style={{ color: 'white', justifyContent: 'center', alignItems: 'center' }}>CATEGORIES</Text>
       </View>
       <View style={styles.categories}>
-        
         <CategoryCard title="Wine" imageSource={Images.Alcohol} />
         <CategoryCard title="Chicken" imageSource={Images.Fries} />
         <CategoryCard title="CockTail" imageSource={Images.Pizza} />
@@ -101,10 +124,9 @@ const HomeScreen = ({ navigation }) => {
       </View>
       <Text style={styles.featuredTitle}>Featured</Text>
       <View style={styles.featured}>
-        <ProductCard title="McDonald - Kartasura" distance="1.2 km" time="15-20 minutes" rating="4.8" />
-        <ProductCard title="Fore Coffee - Paragon" distance="1.2 km" time="15-20 minutes" rating="4.8" />
-        <ProductCard title="McDonald - Kartasura" distance="1.2 km" time="15-20 minutes" rating="4.8" />
-        <ProductCard title="Fore Coffee - Paragon" distance="1.2 km" time="15-20 minutes" rating="4.8" />
+        {products.map((product, index) => (
+          <ProductCard key={index} product={product} />
+        ))}
       </View>
     </ScrollView>
   );
@@ -113,7 +135,7 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'grey',
+    backgroundColor: '#FDF0F3',
     top: 15,
   },
   header: {
@@ -139,7 +161,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   bannerScroll: {
-    marginVertical: 16,
+    // marginVertical: 16,
   },
   banner: {
     width: width - 32,
@@ -199,6 +221,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: 4,
   },
+  inputContainer: {
+    backgroundColor: 'white',
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    margin:20,
+    // marginVertical: 20,
+
+  },
+  iconContainer: {
+    marginHorizontal: 15
+  },
+  textInput: {
+    flex: 1,
+    // borderWidth: 1,
+    // borderColor: 'black'
+  }
 });
 
 export default HomeScreen;

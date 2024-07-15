@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const CheckoutScreen = ({ navigation }) => {
+const CartScreen = ({ navigation }) => {
   const [cartItems, setCartItems] = useState([]);
 
   useEffect(() => {
@@ -19,24 +19,35 @@ const CheckoutScreen = ({ navigation }) => {
     fetchCartItems();
   }, []);
 
-  const handlePlaceOrder = async () => {
-    // Implement order placement logic here, e.g., sending order to backend
+  const handleRemoveFromCart = async (productId) => {
     try {
-      // Assuming you clear the cart after placing the order
-      await AsyncStorage.removeItem("CartItems");
-      setCartItems([]);
-      Alert.alert('Success', 'Order placed successfully!');
-      // Navigate to a thank you screen or any other screen after successful order placement
-      navigation.navigate('ThankYou'); // Replace 'ThankYou' with your actual thank you screen name
+      const updatedCartItems = cartItems.filter(item => item._id !== productId);
+      setCartItems(updatedCartItems);
+      await AsyncStorage.setItem("CartItems", JSON.stringify(updatedCartItems));
+      Alert.alert('Success', 'Product removed from cart!');
     } catch (error) {
-      console.error('Error placing order:', error);
-      Alert.alert('Error', 'Failed to place order.');
+      console.error('Error removing product from cart:', error);
+      Alert.alert('Error', 'Failed to remove product from cart.');
+    }
+  };
+
+  const handleCheckout = async () => {
+    try {
+      const userToken = await AsyncStorage.getItem('userToken');
+      if (userToken) {
+        navigation.navigate('AuthStack', { screen: 'Checkout' });
+      } else {
+        navigation.navigate('HomeTabs', { screen: 'Login' });
+      }
+    } catch (error) {
+      console.error('Error retrieving user token:', error);
+      // Handle error as needed
     }
   };
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Checkout</Text>
+      <Text style={styles.title}>Cart</Text>
       <View style={styles.cartList}>
         {cartItems.length === 0 ? (
           <Text style={styles.emptyCartText}>Your cart is empty</Text>
@@ -47,15 +58,21 @@ const CheckoutScreen = ({ navigation }) => {
               <Text style={styles.productName}>{product.productName}</Text>
               <Text style={styles.productPrice}>RWF {product.price}</Text>
               <Text style={styles.productDescription}>{product.description}</Text>
+              <TouchableOpacity
+                style={styles.removeFromCartButton}
+                onPress={() => handleRemoveFromCart(product._id)}
+              >
+                <Text style={styles.removeFromCartButtonText}>Remove from Cart</Text>
+              </TouchableOpacity>
             </View>
           ))
         )}
         {cartItems.length > 0 && (
           <TouchableOpacity
-            style={styles.placeOrderButton}
-            onPress={handlePlaceOrder}
+            style={styles.checkoutButton}
+            onPress={handleCheckout}
           >
-            <Text style={styles.placeOrderButtonText}>Place Order</Text>
+            <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -109,23 +126,35 @@ const styles = StyleSheet.create({
     color: '#666',
     marginVertical: 8,
   },
-  placeOrderButton: {
-    backgroundColor: '#2196f3',
-    padding: 15,
+  removeFromCartButton: {
+    backgroundColor: '#ff5722',
+    padding: 10,
+    marginTop: 10,
     borderRadius: 4,
     alignItems: 'center',
-    marginTop: 20,
   },
-  placeOrderButtonText: {
+  removeFromCartButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 16,
   },
   emptyCartText: {
     fontSize: 18,
     textAlign: 'center',
     marginTop: 50,
   },
+  checkoutButton: {
+    backgroundColor: '#2196f3',
+    padding: 15,
+    borderRadius: 4,
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  checkoutButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+
 });
 
-export default CheckoutScreen;
+export default CartScreen;

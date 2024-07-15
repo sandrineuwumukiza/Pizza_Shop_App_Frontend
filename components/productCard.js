@@ -5,8 +5,8 @@ const ProductCard = ({ product }) => {
   return (
     <TouchableOpacity style={styles.container}>
       <View style={styles.detailContainer}>
-        {product.image.url && product.image.url ? (
-          <Image source={{ uri: product.image.url }} style={styles.image} onError={(error) => console.log("Image load error:", error)} />
+        {product.image && product.image.url ? (
+          <Image source={{ uri: product.image.url }} style={styles.image} />
         ) : (
           <Text>No Image</Text>
         )}

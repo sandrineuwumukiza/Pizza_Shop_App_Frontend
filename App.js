@@ -14,6 +14,7 @@ import { CartProvider } from './middleWare/cartContext';
 import CartIconWithBadge from './components/cartBridge';
 import ProductScreen from './Screens/productScreen';
 import Cart from './Screens/cartItemScreen';
+import AdminAddProductScreen from './Screens/adminScreen';
 
 
 const Stack = createStackNavigator();
@@ -26,6 +27,7 @@ function HomeTabNavigator() {
     <Tab.Screen name="Cart" component={CartScreen} options={{ tabBarIcon: ({ color, size }) => <CartIconWithBadge />, headerShown: false }} />
     <Tab.Screen name="Payment" component={PaymentScreen} options={{ tabBarIcon: ({ color, size }) => <Ionicons name="wallet" color={color} size={size} />, headerShown: false }} />
     <Tab.Screen name="Product" component={ProductScreen} options={{ tabBarIcon: ({ color, size }) => <Ionicons name="wallet" color={color} size={size} />, headerShown: false }} />
+    {/* <Tab.Screen name="Admin" component={AdminAddProductScreen} options={{ tabBarIcon: ({ color, size }) => <Ionicons name="wallet" color={color} size={size} />, headerShown: false }} /> */}
   </Tab.Navigator>
   );
 }
@@ -44,8 +46,10 @@ function AuthStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Admin" component={AdminAddProductScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: false }} />
+      
+      <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
       {/* <Stack.Screen name="OrderSuccess" component={OrderSuccessScreen} options={{ headerShown: false }} /> */}
     </Stack.Navigator>
   );

@@ -1,100 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Dimensions, TextInput } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { Images } from '../constants/images';
 
-const ProductScreen = () => {
-  const [datas, setDatas] = useState([]);
-  const navigation = useNavigation();
-  const [searchVisible, setSearchVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const toggleSearch = () => {
-    setSearchVisible(!searchVisible);
-  };
-
-  const handleSearch = () => {
-    console.log('Searching for:', searchQuery);
-  };
+const ProductListScreen = ({ navigation }) => {
+  const [products, setProducts] = useState([]);
+  const [cartItems, setCartItems] = useState([]);
 
   useEffect(() => {
-    fetch('https://pizza-shop-app.onrender.com/products/productList') 
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new TypeError("Oops, we haven't got JSON!");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setDatas(data);
-        console.log(data);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-  }, []);
-  
-
-  const handleAddToCart = async (cartItem) => {
-    try {
-      const item = await AsyncStorage.getItem("CartItemType");
-      let productList = item ? JSON.parse(item) : [];
-      let checkForDuplicate = productList.filter(
-        (item) => item.id === cartItem.id
-      );
-      if (checkForDuplicate.length < 1) {
-        productList.push(cartItem);
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get('https://pizza-shop-app.onrender.com/products/productList');
+        setProducts(response.data);
+      } catch (error) {
+        console.error('Error fetching products:', error);
       }
-      await AsyncStorage.setItem("CartItemType", JSON.stringify(productList));
-      console.log(productList, cartItem);
+    };
+
+    const fetchCartItems = async () => {
+      try {
+        const item = await AsyncStorage.getItem("CartItems");
+        const cartItems = item ? JSON.parse(item) : [];
+        setCartItems(cartItems);
+      } catch (error) {
+        console.error('Error fetching cart items:', error);
+      }
+    };
+
+    fetchProducts();
+    fetchCartItems();
+  }, []);
+
+  const handleAddToCart = async (product) => {
+    try {
+      const item = await AsyncStorage.getItem("CartItems");
+      let cartItems = item ? JSON.parse(item) : [];
+
+      const checkForDuplicate = cartItems.find(item => item._id === product._id);
+
+      if (!checkForDuplicate) {
+        cartItems.push(product);
+        await AsyncStorage.setItem("CartItems", JSON.stringify(cartItems));
+        setCartItems(cartItems);
+        Alert.alert('Success', 'Product added to cart!');
+      } else {
+        Alert.alert('Info', 'Product already in cart.');
+      }
     } catch (error) {
-      console.error(error);
+      console.error('Error adding product to cart:', error);
+      Alert.alert('Error', 'Failed to add product to cart.');
     }
   };
 
-  const windowWidth = Dimensions.get('window').width;
-
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerIcons}>
-          <Ionicons name="search-outline" size={24} color="#000" style={styles.icon} onPress={toggleSearch} />
-          {searchVisible && (
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search products..."
-              value={searchQuery}
-              onChangeText={(text) => setSearchQuery(text)}
-              onSubmitEditing={handleSearch}
-            />
-          )}
-        </View>
-        <View style={styles.headerIcons}>
-          <Ionicons name="cart-outline" size={24} color="#000" />
-        </View>
-      </View>
-      <View style={styles.productContainer}>
-        {datas.map((detail) => (
-          <TouchableOpacity key={detail._id} style={styles.productDetails} >
-             {detail.image && detail.image.url ? (
-          <Image source={{ uri: detail.image.url }} style={styles.image} onError={(error) => console.log("Image load error:", error)} />
-        ) : (
-          <Text>No Image</Text>
-        )}
-            <Text style={styles.productTitle}>{detail.productName}</Text>
-            <Text style={styles.productCategory}>{detail.category}</Text>
-            <Text style={styles.productCategory}>{detail.description}</Text>
-            <Text style={styles.productPrice}>${detail.price}</Text>
-            <TouchableOpacity style={styles.addButton} onPress={() => handleAddToCart(detail)}>
-              <Text style={styles.addButtonText}>Add To Cart</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>Product List</Text>
+      <View style={styles.productList}>
+        {products.map(product => (
+          <View key={product._id} style={styles.productContainer}>
+            <Image source={{ uri: product.image.url }} style={styles.productImage} />
+            <Text style={styles.productName}>{product.productName}</Text>
+            <Text style={styles.productPrice}>RWF {product.price}</Text>
+            <Text style={styles.productDescription}>{product.description}</Text>
+            <Text style={styles.productCategory}>Category: {product.category}</Text>
+            <TouchableOpacity
+              style={styles.addToCartButton}
+              onPress={() => handleAddToCart(product)}
+            >
+              <Text style={styles.addToCartButtonText}>Add to Cart</Text>
             </TouchableOpacity>
-          </TouchableOpacity>
+          </View>
         ))}
       </View>
     </ScrollView>
@@ -103,119 +78,66 @@ const ProductScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    flex: 1,
+    backgroundColor: '#f5f5f5',
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#f8f8f8',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  headerIcons: {
-    flexDirection: 'row',
-  },
-  icon: {
-    marginRight: 16,
-  },
-  headingProduct: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  headingText: {
+  title: {
     fontSize: 24,
     fontWeight: 'bold',
+    padding: 16,
+    textAlign: 'center',
+    backgroundColor: '#4caf50',
+    color: '#fff',
   },
-  buttonContainer: {
-    alignItems: 'flex-end',
-    marginBottom: -20,
+  productList: {
+    padding: 16,
   },
   productContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 35,
-  },
-  productDetails: {
-    width: 180,
+    backgroundColor: '#fff',
+    padding: 16,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#000',
     borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   productImage: {
-    height: 100,
-    resizeMode: 'contain',
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
   },
-  productTitle: {
-    fontSize: 10,
+  productName: {
+    fontSize: 18,
     fontWeight: 'bold',
     marginVertical: 8,
   },
-  productCategory: {
-    fontSize: 7,
+  productPrice: {
+    fontSize: 16,
     color: '#888',
   },
   productDescription: {
-    fontSize: 5,
+    fontSize: 14,
     color: '#666',
+    marginVertical: 8,
   },
-  productPrice: {
-    fontSize: 18,
+  productCategory: {
+    fontSize: 14,
+    color: '#4caf50',
     fontWeight: 'bold',
-    color: '#000',
-    marginTop: 8,
   },
-  addButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 5,
+  addToCartButton: {
+    backgroundColor: '#4caf50',
+    padding: 10,
     marginTop: 10,
+    borderRadius: 4,
+    alignItems: 'center',
   },
-  addButtonText: {
+  addToCartButtonText: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 14,
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 8,
-    marginRight: 16,
-    width: 200,
-  },
-  '@media screen and (min-width:200px) and (max-width:500px)': {
-    productContainer: {
-      flexDirection: 'column',
-      padding: 0,
-    },
-    headingProduct: {
-      marginLeft: 20,
-    },
-    headingText: {
-      fontSize: 16,
-    },
-    buttonContainer: {
-      marginTop: 2,
-    },
-  },
-  '@media screen and (min-width:501px) and (max-width:1000px)': {
-    productContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-    },
   },
 });
 
-export default ProductScreen;
+export default ProductListScreen;

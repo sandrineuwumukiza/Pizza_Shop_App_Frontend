@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart } from "../Redux/cartReducer";
 
 const ProductListScreen = ({ navigation }) => {
   const [products, setProducts] = useState([]);
   const [cartItems, setCartItems] = useState([]);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -31,44 +35,45 @@ const ProductListScreen = ({ navigation }) => {
     fetchCartItems();
   }, []);
 
-  const handleAddToCart = async (product) => {
-    try {
-      const item = await AsyncStorage.getItem("CartItems");
-      let cartItems = item ? JSON.parse(item) : [];
-
-      const checkForDuplicate = cartItems.find(item => item._id === product._id);
-
-      if (!checkForDuplicate) {
-        cartItems.push(product);
-        await AsyncStorage.setItem("CartItems", JSON.stringify(cartItems));
-        setCartItems(cartItems);
-        Alert.alert('Success', 'Product added to cart!');
-      } else {
-        Alert.alert('Info', 'Product already in cart.');
-      }
-    } catch (error) {
-      console.error('Error adding product to cart:', error);
-      Alert.alert('Error', 'Failed to add product to cart.');
-    }
+  const addItemToCart = (item) => {
+    setAddedToCart(true);
+    dispatch(addToCart(item));
+    setTimeout(() => {
+      setAddedToCart(false);
+    }, 60000);
   };
+
+  const cart = useSelector((state) => state.cart.cart);
+  console.log(cart);
 
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Product List</Text>
       <View style={styles.productList}>
-        {products.map(product => (
+        {products.map((product) => (
           <View key={product._id} style={styles.productContainer}>
             <Image source={{ uri: product.image.url }} style={styles.productImage} />
             <Text style={styles.productName}>{product.productName}</Text>
             <Text style={styles.productPrice}>RWF {product.price}</Text>
             <Text style={styles.productDescription}>{product.description}</Text>
             <Text style={styles.productCategory}>Category: {product.category}</Text>
-            <TouchableOpacity
+            <Pressable
+              onPress={() => addItemToCart(product)}
               style={styles.addToCartButton}
-              onPress={() => handleAddToCart(product)}
             >
-              <Text style={styles.addToCartButtonText}>Add to Cart</Text>
-            </TouchableOpacity>
+              {addedToCart ? (
+                <View>
+                  <Text>Added to Cart</Text>
+                </View>
+              ) : (
+                <Text>Add to Cart</Text>
+              )}
+            </Pressable>
+            <Pressable
+              style={styles.buyNowButton}
+            >
+              <Text>Buy Now</Text>
+            </Pressable>
           </View>
         ))}
       </View>
@@ -128,15 +133,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   addToCartButton: {
-    backgroundColor: '#4caf50',
+    backgroundColor: "#FFC72C",
     padding: 10,
-    marginTop: 10,
-    borderRadius: 4,
-    alignItems: 'center',
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 10,
+    marginVertical: 10,
   },
-  addToCartButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  buyNowButton: {
+    backgroundColor: "#FFAC1C",
+    padding: 10,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginHorizontal: 10,
+    marginVertical: 10,
   },
 });
 

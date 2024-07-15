@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 
 const ProductCard = ({ product }) => {
   return (
-    <TouchableOpacity style={styles.container}>
+    <TouchableOpacity style={styles.container} onPress={product.onPress}>
       <View style={styles.detailContainer}>
-        {product.image.url && product.image.url ? (
-          <Image source={{ uri: product.image.url }} style={styles.image} onError={(error) => console.log("Image load error:", error)} />
+        {product.image && product.image.url ? (
+          <Image source={{ uri: product.image.url }} style={styles.image} />
         ) : (
           <Text>No Image</Text>
         )}
@@ -76,6 +76,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 5,
+    marginTop: 10,
   },
   addButtonText: {
     color: '#fff',

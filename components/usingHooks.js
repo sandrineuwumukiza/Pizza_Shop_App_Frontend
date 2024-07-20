@@ -4,8 +4,8 @@ import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 
 const UsingHooks = () => {
   const config = {
-    public_key: 'FLWPUBK_TEST-86ddb8b376c2a63e2f6f1495e2a8755c-X', // Replace with your actual public key
-    tx_ref: `tx-${Date.now()}`, // Generate unique transaction reference
+    public_key: 'FLWPUBK_TEST-86ddb8b376c2a63e2f6f1495e2a8755c-X',
+    tx_ref: `tx-${Date.now()}`,
     amount: 100,
     currency: 'NGN',
     payment_options: 'card,mobilemoney,ussd',

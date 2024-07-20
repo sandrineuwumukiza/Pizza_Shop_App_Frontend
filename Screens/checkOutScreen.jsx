@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as WebBrowser from 'expo-web-browser';
 
 const CheckoutScreen = ({ navigation }) => {
   const [cartItems, setCartItems] = useState([]);
@@ -19,15 +20,33 @@ const CheckoutScreen = ({ navigation }) => {
     fetchCartItems();
   }, []);
 
-  const handlePlaceOrder = async () => {
-    // Implement order placement logic here, e.g., sending order to backend
+  const calculateTotalAmount = () => {
+    return cartItems.reduce((total, product) => total + product.price, 0);
+  };
+
+  const handlePayment = async () => {
     try {
-      // Assuming you clear the cart after placing the order
+      const paymentUrl = 'https://sandbox-flw-web-v3.herokuapp.com/pay/vix48y0hjsqq';
+      const redirectUrl = 'app://https://github.com/Flutterwave/React-Native?tab=readme-ov-file';
+
+      const result = await WebBrowser.openAuthSessionAsync(paymentUrl, redirectUrl);
+
+      if (result.type === 'success') {
+        console.log('Payment successful:', result.url);
+        navigation.navigate('HomeTabs', { screen: 'Home' });
+      } else {
+        console.log('Payment failed or was canceled');
+      }
+    } catch (error) {
+      console.error('An error occurred during payment:', error);
+    }
+  };
+
+  const handlePlaceOrder = async () => {
+    try {
       await AsyncStorage.removeItem("CartItems");
       setCartItems([]);
       Alert.alert('Success', 'Order placed successfully!');
-      // Navigate to a thank you screen or any other screen after successful order placement
-      navigation.navigate('HomeTabNavigator', {screen: 'Payment'}); // Replace 'ThankYou' with your actual thank you screen name
     } catch (error) {
       console.error('Error placing order:', error);
       Alert.alert('Error', 'Failed to place order.');
@@ -41,22 +60,23 @@ const CheckoutScreen = ({ navigation }) => {
         {cartItems.length === 0 ? (
           <Text style={styles.emptyCartText}>Your cart is empty</Text>
         ) : (
-          cartItems.map(product => (
-            <View key={product._id} style={styles.productContainer}>
-              <Image source={{ uri: product.image.url }} style={styles.productImage} />
-              <Text style={styles.productName}>{product.productName}</Text>
-              <Text style={styles.productPrice}>RWF {product.price}</Text>
-              <Text style={styles.productDescription}>{product.description}</Text>
-            </View>
-          ))
-        )}
-        {cartItems.length > 0 && (
-          <TouchableOpacity
-            style={styles.placeOrderButton}
-            onPress={handlePlaceOrder}
-          >
-            <Text style={styles.placeOrderButtonText}>Place Order</Text>
-          </TouchableOpacity>
+          <>
+            {cartItems.map(product => (
+              <View key={product._id} style={styles.productContainer}>
+                <Image source={{ uri: product.image.url }} style={styles.productImage} />
+                <Text style={styles.productName}>{product.productName}</Text>
+                <Text style={styles.productPrice}>RWF {product.price}</Text>
+                <Text style={styles.productDescription}>{product.description}</Text>
+              </View>
+            ))}
+            <Text style={styles.totalAmount}>Total Amount: RWF {calculateTotalAmount()}</Text>
+            <TouchableOpacity
+              style={styles.placeOrderButton}
+              onPress={handlePayment}
+            >
+              <Text style={styles.placeOrderButtonText}>Pay</Text>
+            </TouchableOpacity>
+          </>
         )}
       </View>
     </ScrollView>
@@ -108,6 +128,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginVertical: 8,
+  },
+  totalAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 16,
+    textAlign: 'center',
   },
   placeOrderButton: {
     backgroundColor: '#2196f3',

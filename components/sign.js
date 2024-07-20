@@ -10,17 +10,38 @@ const SignUpScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
-  const { register } = useContext(AuthContext);
+  const [role, setRole] = useState('user'); // Default role to 'user'
+  const { login } = useContext(AuthContext);
 
   const handleSignUp = async () => {
     try {
-      await register(name, email, password, role);
+      const payload = { name, email, password, role };
+      const response = await axios.post('https://pizza-shop-app.onrender.com/users/registerUser', payload);
+      if (response.status === 201 || response.status === 200) {
+        const { token, user } = response.data;
+        await AsyncStorage.setItem('userToken', token);
+        await AsyncStorage.setItem('userData', JSON.stringify(user));
+        Alert.alert('Registration Successful', 'You have successfully registered!');
+        login();
+        navigation.navigate('HomeTabs');
+      } else {
+        console.error(`Unexpected response status: ${response.status}`);
+        Alert.alert('Registration Failed', `Unexpected response status: ${response.status}`);
+      }
     } catch (error) {
-      console.error(error);
+      if (error.response) {
+        console.error('Error data:', error.response.data);
+        Alert.alert('Registration Failed', error.response.data.message || 'An error occurred');
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+        Alert.alert('Registration Failed', 'No response received from server.');
+      } else {
+        console.error('Error message:', error.message);
+        Alert.alert('Registration Failed', error.message);
+      }
     }
   };
-    
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>

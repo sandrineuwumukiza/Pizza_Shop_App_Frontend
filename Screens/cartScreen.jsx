@@ -1,158 +1,182 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, Button, Image, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CommonActions } from '@react-navigation/native'; // Import CommonActions
+import { useNavigation } from '@react-navigation/native';
 
-const CartScreen = ({ navigation }) => {
-  const [cartItems, setCartItems] = useState([]);
+const CartScreen = () => {
+  const [productInCart, setProductInCart] = useState([]);
+  const [total, setTotal] = useState(0);
+  const navigation = useNavigation();
 
-  useEffect(() => {
-    const fetchCartItems = async () => {
-      try {
-        const item = await AsyncStorage.getItem("CartItems");
-        const cartItems = item ? JSON.parse(item) : [];
-        setCartItems(cartItems);
-      } catch (error) {
-        console.error('Error fetching cart items:', error);
-      }
-    };
-
-    fetchCartItems();
-  }, []);
-
-  const handleRemoveFromCart = async (productId) => {
+  const GetCart = async () => {
     try {
-      const updatedCartItems = cartItems.filter(item => item._id !== productId);
-      setCartItems(updatedCartItems);
-      await AsyncStorage.setItem("CartItems", JSON.stringify(updatedCartItems));
-      Alert.alert('Success', 'Product removed from cart!');
+      const jsonValue = await AsyncStorage.getItem('CartItems');
+      setProductInCart(jsonValue != null ? JSON.parse(jsonValue) : []);
     } catch (error) {
-      console.error('Error removing product from cart:', error);
-      Alert.alert('Error', 'Failed to remove product from cart.');
+      console.error(error);
     }
   };
 
-  const handleCheckout = () => {
-    // Navigate to the login screen in the AuthStack
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'AuthStack',
-        params: {
-          screen: 'LoginScreen' // Replace 'LoginScreen' with your actual screen name
-        }
-      })
-    );
+  useEffect(() => {
+    GetCart();
+  }, []);
+
+  const removeItemInCart = async (productId) => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('CartItems');
+      let productList = jsonValue != null ? JSON.parse(jsonValue) : [];
+      productList = productList.filter((item) => item._id !== productId);
+      await AsyncStorage.setItem('CartItems', JSON.stringify(productList));
+      GetCart();
+    } catch (error) {
+      console.error(error);
+    }
   };
 
+  const incrementProducts = async (productId) => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('CartItems');
+      let productList = jsonValue != null ? JSON.parse(jsonValue) : [];
+
+      productList = productList.map((item) => {
+        if (item._id === productId) {
+          item.quantity = (item.quantity || 1) + 1;
+        }
+        return item;
+      });
+
+      await AsyncStorage.setItem('CartItems', JSON.stringify(productList));
+      GetCart();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const decrementProduct = async (productId) => {
+    try {
+      const jsonValue = await AsyncStorage.getItem('CartItems');
+      let productList = jsonValue != null ? JSON.parse(jsonValue) : [];
+
+      productList = productList.map((item) => {
+        if (item._id === productId) {
+          item.quantity = (item.quantity || 1) - 1;
+          if (item.quantity < 1) {
+            removeItemInCart(productId);
+            return null;
+          }
+        }
+        return item;
+      }).filter(item => item !== null);
+
+      await AsyncStorage.setItem('CartItems', JSON.stringify(productList));
+      GetCart();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    const calculatedTotal = productInCart.reduce((ack, item) => ack + (item.quantity || 1) * item.price, 0);
+    setTotal(calculatedTotal);
+  }, [productInCart]);
+
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Cart</Text>
-      <View style={styles.cartList}>
-        {cartItems.length === 0 ? (
-          <Text style={styles.emptyCartText}>Your cart is empty</Text>
-        ) : (
-          cartItems.map(product => (
-            <View key={product._id} style={styles.productContainer}>
-              <Image source={{ uri: product.image.url }} style={styles.productImage} />
-              <Text style={styles.productName}>{product.productName}</Text>
-              <Text style={styles.productPrice}>RWF {product.price}</Text>
-              <Text style={styles.productDescription}>{product.description}</Text>
-              <TouchableOpacity
-                style={styles.removeFromCartButton}
-                onPress={() => handleRemoveFromCart(product._id)}
-              >
-                <Text style={styles.removeFromCartButtonText}>Remove from Cart</Text>
+    <View style={styles.container}>
+      <Text style={styles.heading}>MY CART</Text>
+      <FlatList
+        data={productInCart}
+        keyExtractor={(item) => item._id.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.productContainer} key={item._id}>
+            <Image source={{ uri: item.image.url }} style={styles.productImage} />
+            <Text style={styles.productName}>{item.productName}</Text>
+            <Text style={styles.productPrice}>RWF {item.price}</Text>
+            <View style={styles.quantityControl}>
+              <TouchableOpacity onPress={() => decrementProduct(item._id)} style={styles.buttons}>
+              <Text>-</Text>
               </TouchableOpacity>
+              <Text>{item.quantity || 1}</Text>
+              <TouchableOpacity onPress={() => incrementProducts(item._id) } style={styles.buttons}><Text>+</Text></TouchableOpacity>
             </View>
-          ))
+             <Text>Amount: RWF {(item.quantity || 1) * item.price}</Text>
+            <TouchableOpacity
+              style={styles.removeToCartButton}
+              onPress={() => removeItemInCart(item._id)}
+            >
+              <Text style={styles.removeToCartButtonText}>Remove Product From Cart</Text>
+            </TouchableOpacity>
+           
+          </View>
         )}
-        {cartItems.length > 0 && (
-          <TouchableOpacity
-            style={styles.checkoutButton}
-            onPress={handleCheckout}
-          >
-            <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-          </TouchableOpacity>
-        )}
+      />
+      <View style={styles.totalContainer}>
+        <Text>Total Amount: RWF {total.toFixed(2)}</Text>
+        <TouchableOpacity
+              style={styles.removeToCartButton}
+              onPress={() => navigation.navigate('MainStack', {screen: 'Checkout'})}
+            >
+              <Text style={styles.removeToCartButtonText}>Place Order</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.removeToCartButton}
+              onPress={() => navigation.navigate('MainStack', {screen: 'Product'})}
+            >
+              <Text style={styles.removeToCartButtonText}>Explore More Product</Text>
+            </TouchableOpacity>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    padding: 16,
   },
-  title: {
+  heading: {
     fontSize: 24,
     fontWeight: 'bold',
-    padding: 16,
     textAlign: 'center',
-    backgroundColor: '#4caf50',
-    color: '#fff',
+    marginVertical: 16,
   },
-  cartList: {
-    padding: 16,
+  cartItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
   },
-  productContainer: {
-    backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 16,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  productImage: {
-    width: '100%',
-    height: 200,
+  image: {
+    width: 100,
+    height: 100,
+    resizeMode: 'cover',
     borderRadius: 8,
   },
-  productName: {
+  title: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginVertical: 8,
   },
-  productPrice: {
+  price: {
     fontSize: 16,
     color: '#888',
   },
-  productDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginVertical: 8,
-  },
-  removeFromCartButton: {
-    backgroundColor: '#ff5722',
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 4,
+  quantityControl: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  removeFromCartButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  totalContainer: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
   },
-  emptyCartText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginTop: 50,
-  },
-  checkoutButton: {
-    backgroundColor: '#4caf50',
-    padding: 15,
-    marginTop: 20,
-    borderRadius: 4,
-    alignItems: 'center',
-  },
-  checkoutButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  removeToCartButton: { backgroundColor: '#4caf50', padding: 10, marginTop: 10, borderRadius: 4, alignItems: 'center' },
+  removeToCartButtonText: { color: '#fff', fontWeight: 'bold' },
+  productContainer: { backgroundColor: '#fff', padding: 16, marginBottom: 16, borderRadius: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+  productImage: { width: '100%', height: 200, borderRadius: 8 },
+  productName: { fontSize: 18, fontWeight: 'bold', marginVertical: 8 },
+  productPrice: { fontSize: 16, color: '#888' },
+  productDescription: { fontSize: 14, color: '#666', marginVertical: 8 },
+  productCategory: { fontSize: 14, color: '#4caf50', fontWeight: 'bold' },
+  buttons: {backgroundColor: '#FDF0F3', padding: 10,alignItems: 'center', borderRadius: 2 }
 });
 
 export default CartScreen;

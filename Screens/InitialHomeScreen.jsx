@@ -1,29 +1,58 @@
-import React, { useState,useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { CommonActions } from '@react-navigation/native';
 import { AuthContext } from '../components/authContext';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const { login } = useContext(AuthContext);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      alert('Please fill in both Email and Password.');
+      return;
+    }
+
     try {
-      await login(email, password);
+      const response = await axios.post('https://pizza-shop-app.onrender.com/users/login', { email, password });
+
+      if (response.status === 200) {
+        const { token, user } = response.data;
+
+        if (token && user) {
+          await AsyncStorage.setItem('userToken', token);
+          await AsyncStorage.setItem('userData', JSON.stringify(user));
+          Alert.alert('Login Successful', 'You are successfully logged in.');
+          login();
+          navigation.navigate('HomeTabs');
+        } else {
+          Alert.alert('Login Failed', 'Unexpected response data.');
+        }
+      } else {
+        Alert.alert('Login Failed', `Unexpected response status: ${response.status}`);
+      }
     } catch (error) {
-      console.error(error);
+      if (error.response) {
+        if (error.response.data.msg === 'User already exists') {
+          Alert.alert('Login Failed', 'User already exists. Please try logging in.');
+        } else {
+          Alert.alert('Login Failed', error.response.data.message || 'An error occurred');
+        }
+      } else if (error.request) {
+        Alert.alert('Login Failed', 'Network Error: Please check your internet connection.');
+      } else {
+        Alert.alert('Login Failed', error.message);
+      }
     }
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack('HomeScreen')}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={30} color="#000" />
         </TouchableOpacity>
       </View>
@@ -45,7 +74,7 @@ const LoginScreen = ({ navigation }) => {
           secureTextEntry
         />
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>LogIn</Text>
+          <Text style={styles.buttonText}>Log In</Text>
         </TouchableOpacity>
         <View style={styles.signup}>
           <TouchableOpacity onPress={() => navigation.navigate('ForgotPasswordScreen')}>
@@ -95,11 +124,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 20,
     color: '#000',
-  },
-  signup: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginTop: 20,
   },
   button: {
     backgroundColor: '#4CAF50',

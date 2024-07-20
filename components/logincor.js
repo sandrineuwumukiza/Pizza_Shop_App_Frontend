@@ -9,14 +9,42 @@ import { AuthContext } from '../components/authContext';
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
   const { login } = useContext(AuthContext);
 
+  const API_URL = 'https://pizza-shop-app.onrender.com/users/login';
+
   const handleLogin = async () => {
+    if (!email || !password) {
+      alert('Please fill in both Email and Password.');
+      return;
+    }
+    else{
+      alert("You are successfully logged in")
+    }
+
     try {
-      await login(email, password);
+      const response = await axios.post(API_URL, { email, password });
+      await AsyncStorage.setItem('userToken', response.data.token);
+      Alert.alert('You are logged in successfully')
+
+      const role = response.data.role; // Adjust as per your API response structure
+
+      login();
+    navigation.navigate('HomeTabs');
+
+
     } catch (error) {
-      console.error(error);
+      if (error.response) {
+        console.error('Server Error:', error.response.data);
+        console.error('Status Code:', error.response.status);
+        alert('Login Failed: Please check your credentials and try again.');
+      } else if (error.request) {
+        console.error('No Response Received:', error.request);
+        alert('Network Error: Please check your internet connection.');
+      } else {
+        console.error('Error Message:', error.message);
+        alert('An unexpected error occurred. Please try again later.');
+      }
     }
   };
 

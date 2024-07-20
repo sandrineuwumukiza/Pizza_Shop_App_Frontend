@@ -1,37 +1,44 @@
+// components/CategoryCard.js
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 
-const CategoryCard = ({ title, imageSource }) => {
+const CategoryCard = ({ title, imageSource, navigation }) => {
+  
   return (
-    <TouchableOpacity style={styles.container}>
-        <Image source={imageSource} style={styles.image} />
-      <Text style={styles.text}>{title}</Text>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => navigation.navigate('MainStack', {
+        screen: 'Category',
+        params: { category: title }
+      })}
+    >
+      <Image source={imageSource} style={styles.image} />
+      <Text style={styles.title}>{title}</Text>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8f8f8',
-    width:110,
-    borderRadius:8,
-    height:150,
-    paddingTop: 3,
-    // padding: 16,
-    // borderRadius: 8,
-    marginRight: 8,
-    alignItems: 'center',
+  card: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginRight: 10,
   },
   image: {
-    width: 104,
-    // borderRadius:10,
-    height: 94,
-    marginBottom: 8,
-    resizeMode: 'contain', 
-    borderRadius: 10
+    width: '100%',
+    height: '100%',
   },
-  text: {
-    fontSize: 14,
+  title: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    color: '#fff',
+    textAlign: 'center',
+    padding: 10,
   },
 });
 
